@@ -12,7 +12,7 @@ app.use(express.static(__dirname, {
 // Route to serve JSON
 app.get('/api/markers', (req, res) => {
   try {
-    const data = require('./encampment_map_data (3).json');
+    const data = require('./encampment_map_data.json');
     res.json(data);
   } catch (error) {
     console.error('Error serving JSON:', error);
