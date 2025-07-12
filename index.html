@@ -1,253 +1,119 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Homeless Encampment Map</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Effects of Homelessness</title>
   <style>
+    body { margin: 0; font-family: Arial, sans-serif; }
     #map { height: 600px; width: 100%; }
-    .button-container { 
-      margin: 10px; 
-      text-align: center; /* Centers buttons horizontally */
-      white-space: nowrap; /* Keeps buttons in one row */
-      overflow-x: auto; /* Adds horizontal scroll if needed */
-    }
-    button { 
-      display: inline-block; /* Inline but respects padding */
-      margin: 5px; 
-      padding: 5px 10px; 
-      width: 130px; /* Fixed width for consistency */
-      height: 30px; /* Fixed height for two lines */
-      text-align: center; 
-      vertical-align: top; /* Aligns tops of buttons */
-      justify-content: center; /* Center vertically */
-      align-items: center; /* Center horizontally */
-    }
-    #tier-buttons { 
-      margin: 10px; 
-      text-align: center; /* Centers tier buttons horizontally */
-      display: none; /* Keeps default hidden state */
-    }
-    #legend { 
-      position: absolute; 
-      left: 20px; 
-      top: 150px; 
-      padding: 6px; 
-      background: white; 
-      border: 1px solid #ccc; 
-      font-family: Arial, sans-serif;
-      font-size: 14px; 
-      max-height: 200px; 
-      overflow-y: auto; 
-    }
-    #legend h3 {
-      margin: 0 0 5px 0; /* Tight spacing below title */
-      font-size: 16px; /* Slightly larger than legend items */
-      text-align: center; /* Centered title */
-    }
-  .legend-item { 
-    display: flex; 
-    align-items: center; 
-    margin-bottom: 4px; 
-  }
-  .legend-symbol { 
-    width: 10px; 
-    height: 10px; 
-    border-radius: 50%; 
-    margin-right: 6px; 
-  }
+    .controls { position: absolute; top: 10px; left: 10px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
+    .controls button { margin: 5px; }
+    .legend { position: absolute; bottom: 10px; right: 10px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
+    .legend-item { display: flex; align-items: center; margin: 5px 0; }
+    .legend-item div { width: 20px; height: 20px; margin-right: 5px; }
   </style>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBqIUhTmGOMDrZfPx5p0Y9m247gH0swyPw"></script>
 </head>
 <body>
-  <div class="button-container">
-    <button onclick="showView('all')">Show All</button>
-    <button onclick="showView('encampments_fires')">Fires</button>
-    <button onclick="showView('encampments_schools')">Schools</button>
-    <button onclick="showView('encampments_milemarkers')">Mile Markers</button>
-    <button onclick="showView('encampments_gov')">Gov Buildings</button>
-    <button onclick="showView('encampments_bus')">Bus Stations</button>
-    <button onclick="showView('encampments_fire')">Fire Stations</button>
-    <button onclick="showView('encampments_police')">Police Stations</button>
-  </div>
-  <div id="tier-buttons">
-    <button onclick="setTier('Tier 1')">Tier 1</button>
-    <button onclick="setTier('Tier 2')">Tier 2</button>
-    <button onclick="setTier('Tier 3')">Tier 3</button>
-  </div>
   <div id="map"></div>
-  <div id="legend">
+  <div class="controls">
+    <button onclick="filterMarkers('all')">Show All</button>
+    <button onclick="filterMarkers('Homeless Fires')">Fires</button>
+    <button onclick="filterMarkers('Schools')">Schools</button>
+    <button onclick="filterMarkers('Mile Markers')">Mile Markers</button>
+    <button onclick="filterMarkers('Government Buildings')">Gov Buildings</button>
+    <button onclick="filterMarkers('Bus Stations')">Bus Stations</button>
+    <button onclick="filterMarkers('Fire Stations')">Fire Stations</button>
+    <button onclick="filterMarkers('Police Stations')">Police Stations</button>
+    <br>
+    <button onclick="filterByTier('Tier 1')">Tier 1</button>
+    <button onclick="filterByTier('Tier 2')">Tier 2</button>
+    <button onclick="filterByTier('Tier 3')">Tier 3</button>
+  </div>
+  <div class="legend">
     <h3>Legend</h3>
-    <div class="legend-item">
-      <svg width="13" height="13" viewBox="0 0 10 10" style="margin-right: 6px;">
-        <path d="M5 2 L8 8 L2 8 Z" fill="#8B4513" stroke="#000000" stroke-width="1"/>
-      </svg>Encampments
-    </div>
-    <div class="legend-item"><span class="legend-symbol" style="background-color: #E44EF5;"></span>Schools</div>
-    <div class="legend-item"><span class="legend-symbol" style="background-color: #0000FF;"></span>Police Stations</div>
-    <div class="legend-item"><span class="legend-symbol" style="background-color: #FF0000;"></span>Fires</div>
-    <div class="legend-item"><span class="legend-symbol" style="background-color: #03FC41;"></span>Government Buildings</div>
-    <div class="legend-item"><span class="legend-symbol" style="background-color: #FF7A05;"></span>Mile Markers</div>
-    <div class="legend-item"><span class="legend-symbol" style="background-color: #000000;"></span>Fire Stations</div>
-    <div class="legend-item"><span class="legend-symbol" style="background-color: #FFFF00;"></span>Bus Stations</div>
+    <div class="legend-item"><div style="background-color: red;"></div>Encampments</div>
+    <div class="legend-item"><div style="background-color: blue;"></div>Schools</div>
+    <div class="legend-item"><div style="background-color: green;"></div>Police Stations</div>
+    <div class="legend-item"><div style="background-color: orange;"></div>Fires</div>
+    <div class="legend-item"><div style="background-color: purple;"></div>Government Buildings</div>
+    <div class="legend-item"><div style="background-color: yellow;"></div>Mile Markers</div>
+    <div class="legend-item"><div style="background-color: pink;"></div>Fire Stations</div>
+    <div class="legend-item"><div style="background-color: cyan;"></div>Bus Stations</div>
   </div>
 
   <script>
-    let map, markers = [], data, currentView = 'all', currentTier = null;
-    const colors = {
-      'Encampment Data': { full: '#8B4513', light: '#D2B48C' },      // Brown
-      'School Data': { full: '#E44EF5', light: '#F3CBF7' },        // Purple
-      'Homeless Fires': { full: '#FF0000', light: '#FFA07A' }, //red
-      'Mile Markers': { full: '#FF7A05', light: '#FFCE91' }, //orange
-      'Government Buildings': { full: '#03FC41', light: '#90EE90' }, //green
-      'Transportation': { full: '#FFFF00', light: '#FFFFE0' }, //yellow
-      'Police/Sheriff Stations': { full: '#0000FF', light: '#ADD8E6' }, //blue
-      'Fire Stations': { full: '#000000', light: '#808080' }, //black
-      'grey': '#D7DBD7'                 // Grey for inactive
-    };
+    let map;
+    let markers = [];
 
+    // Initialize Google Map
     function initMap() {
       map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat: 38.58, lng: -121.49 },
-        zoom: 12
+        center: { lat: 38.58, lng: -121.42 }, // Sacramento, CA
+        zoom: 10
       });
-      console.log("Map initialized, map object:", map);
-      loadData();
+      loadMarkers();
     }
 
-    function loadData() {
-      console.log("Attempting to fetch encampment_map_data.json");
-      fetch('encampment_map_data.json')
+    // Load markers from JSON
+    function loadMarkers() {
+      fetch('/api/markers')
         .then(response => {
-          if (!response.ok) throw new Error('Fetch failed: ' + response.status);
+          if (!response.ok) throw new Error('Sync failed: ' + response.status);
           return response.json();
         })
-        .then(jsonData => {
-          data = jsonData;
-          if (!Array.isArray(jsonData)) {
-            console.error("JSON is not an array:", jsonData);
-          } else if (jsonData.length === 0) {
-            console.error("JSON array is empty");
-          } else {
-            console.log("Data loaded, length:", jsonData.length);
-            createMarkers(); // Initial creation
-            plotMarkers(currentView); // Initial plot
-          }
-        })
-        .catch(error => console.error("Load data error:", error));
-    }
-
-    function createMarkers() {
-      markers = data.map(point => {
-        const isEncampment = point.Category === 'Encampment Data';
-        const marker = new google.maps.Marker({
-          position: { lat: parseFloat(point.Latitude), lng: parseFloat(point.Longitude) },
-          map: map,
-          icon: {
-            path: isEncampment ? google.maps.SymbolPath.FORWARD_CLOSED_ARROW : google.maps.SymbolPath.CIRCLE,
-            scale: isEncampment ? 4 : 6, // Smaller for arrows, larger for circles
-            fillColor: colors['grey'],
-            fillOpacity: 1,
-            strokeWeight: 1,
-            strokeColor: '#000000'
-          }
-        });
-        marker.addListener('click', () => {
-          const distance = point['Distance (miles)'] && point['Distance (miles)'] !== 'N/A' 
-            ? Number(point['Distance (miles)']).toFixed(2) : 'N/A';
-          new google.maps.InfoWindow({
-            content: `
-              <div style="text-align: center; font-weight: bold;">${point.Category}</div>
-              <b>Name:</b> ${point.Name}<br>
-              <b>Closest Encampment:</b> ${point['Closest Encampment'] || 'N/A'}<br>
-              <b>Distance:</b> ${distance} miles<br>
-              <b>Direction:</b> ${point.Direction || 'N/A'}
-            `
-          }).open(map, marker);
-        });
-        return marker;
-      });
-      console.log("Markers created:", markers.length);
-    }
-
-    function plotMarkers(view) {
-      console.log("Plotting view:", view, "Tier:", currentTier);
-
-      if (!markers.length) return;
-
-      markers.forEach((marker, index) => {
-        const point = data[index];
-        let color = colors['grey'];
-        const category = point.Category;
-        const tier = point.Tier;
-        const isEncampment = category === 'Encampment Data';
-
-        if (view === 'all') {
-          color = colors[category]?.full || colors['grey'];
-        } else {
-          const isEncampment = category === 'Encampment Data';
-          const secondaryCategory = getSecondaryCategory(view);
-          const isSecondary = category === secondaryCategory;
-
-          if (isEncampment || isSecondary) {
-            if (!currentTier || tier === 'N/A' || (isEncampment && tier !== 'N/A')) {
-              color = colors[category].full;
-            } else if (tier === currentTier) {
-              color = colors[category].full;
-            } else {
-              color = colors[category].light;
-            }
-          }
-        }
-
-        requestAnimationFrame(() => {
-          marker.setIcon({
-            path: isEncampment ? google.maps.SymbolPath.FORWARD_CLOSED_ARROW : google.maps.SymbolPath.CIRCLE,
-            scale: isEncampment ? 4 : 6,
-            fillColor: color,
-            fillOpacity: 1,
-            strokeWeight: 1,
-            strokeColor: '#000000'
+        .then(data => {
+          clearMarkers();
+          data.forEach(item => {
+            const marker = new google.maps.Marker({
+              position: { lat: item.Latitude, lng: item.Longitude },
+              map: map,
+              title: item.Name,
+              icon: getMarkerIcon(item.Category)
+            });
+            marker.category = item.Category;
+            marker.tier = item.Tier;
+            markers.push(marker);
           });
-        });
-      });
-      console.log("Markers updated for view:", view);
+        })
+        .catch(error => console.error('Error syncing JSON:', error));
     }
 
-    function getSecondaryCategory(view) {
-      const map = {
-        'encampments_fires': 'Homeless Fires',
-        'encampments_schools': 'School Data',
-        'encampments_milemarkers': 'Mile Markers',
-        'encampments_gov': 'Government Buildings',
-        'encampments_bus': 'Transportation',
-        'encampments_fire': 'Fire Stations',
-        'encampments_police': 'Police/Sheriff Stations'
+    // Get marker icon based on category
+    function getMarkerIcon(category) {
+      const icons = {
+        'Encampment Data': 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+        'Schools': 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+        'Police Stations': 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+        'Homeless Fires': 'http://maps.google.com/mapfiles/ms/icons/orange-dot.png',
+        'Government Buildings': 'http://maps.google.com/mapfiles/ms/icons/purple-dot.png',
+        'Mile Markers': 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+        'Fire Stations': 'http://maps.google.com/mapfiles/ms/icons/pink-dot.png',
+        'Bus Stations': 'http://maps.google.com/mapfiles/ms/icons/cyan-dot.png'
       };
-      return map[view];
+      return icons[category] || 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
     }
 
-    function showView(view) {
-      currentView = view;
-      currentTier = null;
-      document.getElementById('tier-buttons').style.display = view === 'all' ? 'none' : 'block';
-      plotMarkers(view);
+    // Clear all markers
+    function clearMarkers() {
+      markers.forEach(marker => marker.setMap(null));
+      markers = [];
     }
 
-    function setTier(tier) {
-      currentTier = tier;
-      plotMarkers(currentView);
+    // Filter markers by category
+    function filterMarkers(category) {
+      markers.forEach(marker => {
+        marker.setMap(category === 'all' || marker.category === category ? map : null);
+      });
     }
 
-
-    fetch('/download-json')
-      .then(response => {
-        if (!response.ok) throw new Error('Sync failed: ' + response.status);
-        return response.text();
-      })
-      .then(() => {
-        console.log('JSON synced');
-        initMap();
-      })
-      .catch(error => console.error('Error syncing JSON:', error));
+    // Filter markers by tier
+    function filterByTier(tier) {
+      markers.forEach(marker => {
+        marker.setMap(marker.tier === tier ? map : null);
+      });
+    }
   </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBqIUhTmGOMDrZfPx5p0Y9m247gH0swyPw&callback=initMap"></script>
 </body>
 </html>
