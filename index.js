@@ -20,11 +20,6 @@ app.get('/api/markers', (req, res) => {
   }
 });
 
-// Serve API key for Google Maps
-app.get('/api/config', (req, res) => {
-  res.json({ googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || 'YOUR_DEFAULT_API_KEY' });
-});
-
 // Fallback to index.html for SPA routing
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
