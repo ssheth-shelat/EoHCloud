@@ -3,28 +3,37 @@
 <head>
   <title>Homeless Encampment Map</title>
   <style>
-    #map { height: 600px; width: 100%; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #map { 
+      height: 600px; 
+      width: 100%; 
+      border: 1px solid red; /* Temporary for debugging */
+    }
     .button-container { 
       margin: 10px; 
-      text-align: center; /* Centers buttons horizontally */
-      white-space: nowrap; /* Keeps buttons in one row */
-      overflow-x: auto; /* Adds horizontal scroll if needed */
+      text-align: center;
+      white-space: nowrap;
+      overflow-x: auto;
     }
     button { 
-      display: inline-block; /* Inline but respects padding */
+      display: inline-block;
       margin: 5px; 
       padding: 5px 10px; 
-      width: 130px; /* Fixed width for consistency */
-      height: 30px; /* Fixed height for two lines */
+      width: 130px;
+      height: 30px;
       text-align: center; 
-      vertical-align: top; /* Aligns tops of buttons */
-      justify-content: center; /* Center vertically */
-      align-items: center; /* Center horizontally */
+      vertical-align: top;
+      justify-content: center;
+      align-items: center;
     }
     #tier-buttons { 
       margin: 10px; 
-      text-align: center; /* Centers tier buttons horizontally */
-      display: none; /* Keeps default hidden state */
+      text-align: center;
+      display: none;
     }
     #legend { 
       position: absolute; 
@@ -39,9 +48,9 @@
       overflow-y: auto; 
     }
     #legend h3 {
-      margin: 0 0 5px 0; /* Tight spacing below title */
-      font-size: 16px; /* Slightly larger than legend items */
-      text-align: center; /* Centered title */
+      margin: 0 0 5px 0;
+      font-size: 16px;
+      text-align: center;
     }
     .legend-item { 
       display: flex; 
@@ -55,7 +64,7 @@
       margin-right: 6px; 
     }
   </style>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBqIUhTmGOMDrZfPx5p0Y9m247gH0swyPw"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBqIUhTmGOMDrZfPx5p0Y9m247gH0swyPw&callback=initMap"></script>
 </head>
 <body>
   <div class="button-container">
@@ -93,86 +102,107 @@
   <script>
     let map, markers = [], data, currentView = 'all', currentTier = null;
     const colors = {
-      'Encampment Data': { full: '#8B4513', light: '#D2B48C' }, // Brown
-      'Homeless Fires': { full: '#FF0000', light: '#FFA07A' }, // Red
-      'School Data': { full: '#E44EF5', light: '#F3CBF7' }, // Purple
-      'Mile Markers': { full: '#FF7A05', light: '#FFCE91' }, // Orange
-      'Government Buildings': { full: '#03FC41', light: '#90EE90' }, // Green
-      'Transportation': { full: '#FFFF00', light: '#FFFFE0' }, // Yellow
-      'Fire Stations': { full: '#000000', light: '#808080' }, // Black
-      'Police/Sheriff Stations': { full: '#0000FF', light: '#ADD8E6' }, // Blue
-      'grey': '#D7DBD7' // Grey for inactive
+      'Encampment Data': { full: '#8B4513', light: '#D2B48C' },
+      'Homeless Fires': { full: '#FF0000', light: '#FFA07A' },
+      'School Data': { full: '#E44EF5', light: '#F3CBF7' },
+      'Mile Markers': { full: '#FF7A05', light: '#FFCE91' },
+      'Government Buildings': { full: '#03FC41', light: '#90EE90' },
+      'Transportation': { full: '#FFFF00', light: '#FFFFE0' },
+      'Fire Stations': { full: '#000000', light: '#808080' },
+      'Police/Sheriff Stations': { full: '#0000FF', light: '#ADD8E6' },
+      'grey': '#D7DBD7'
     };
 
     function initMap() {
-      map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat: 38.58, lng: -121.49 },
-        zoom: 12
-      });
-      console.log("Map initialized, map object:", map);
-      loadData();
+      try {
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: { lat: 38.58, lng: -121.49 },
+          zoom: 12
+        });
+        console.log("Map initialized successfully");
+        loadData();
+      } catch (error) {
+        console.error("Map initialization failed:", error);
+      }
     }
 
     function loadData() {
       console.log("Attempting to fetch /api/markers");
       fetch('/api/markers')
         .then(response => {
-          if (!response.ok) throw new Error('Fetch failed: ' + response.status);
+          if (!response.ok) throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
           return response.json();
         })
         .then(jsonData => {
           data = jsonData;
           if (!Array.isArray(jsonData)) {
             console.error("JSON is not an array:", jsonData);
-          } else if (jsonData.length === 0) {
-            console.error("JSON array is empty");
-          } else {
-            console.log("Data loaded, length:", jsonData.length);
-            createMarkers(); // Initial creation
-            plotMarkers(currentView); // Initial plot
+            return;
           }
+          if (jsonData.length === 0) {
+            console.error("JSON array is empty");
+            return;
+          }
+          console.log("Data loaded, length:", jsonData.length);
+          createMarkers();
+          plotMarkers(currentView);
         })
         .catch(error => console.error("Load data error:", error));
     }
 
     function createMarkers() {
-      markers = data.map(point => {
-        const isEncampment = point.Category === 'Encampment Data';
-        const marker = new google.maps.Marker({
-          position: { lat: parseFloat(point.Latitude), lng: parseFloat(point.Longitude) },
-          map: map,
-          icon: {
-            path: isEncampment ? google.maps.SymbolPath.FORWARD_CLOSED_ARROW : google.maps.SymbolPath.CIRCLE,
-            scale: isEncampment ? 4 : 6, // Smaller for arrows, larger for circles
-            fillColor: colors['grey'],
-            fillOpacity: 1,
-            strokeWeight: 1,
-            strokeColor: '#000000'
+      try {
+        markers = data.map((point, index) => {
+          const lat = parseFloat(point.Latitude);
+          const lng = parseFloat(point.Longitude);
+          if (isNaN(lat) || isNaN(lng)) {
+            console.warn(`Invalid coordinates for point ${index}:`, point);
+            return null;
           }
-        });
-        marker.addListener('click', () => {
-          const distance = point['Distance (miles)'] && point['Distance (miles)'] !== 'N/A' 
-            ? Number(point['Distance (miles)']).toFixed(2) : 'N/A';
-          new google.maps.InfoWindow({
-            content: `
-              <div style="text-align: center; font-weight: bold;">${point.Category}</div>
-              <b>Name:</b> ${point.Name}<br>
-              <b>Closest Encampment:</b> ${point['Closest Encampment'] || 'N/A'}<br>
-              <b>Distance:</b> ${distance} miles<br>
-              <b>Direction:</b> ${point.Direction || 'N/A'}
-            `
-          }).open(map, marker);
-        });
-        return marker;
-      });
-      console.log("Markers created:", markers.length);
+          const isEncampment = point.Category === 'Encampment Data';
+          const marker = new google.maps.Marker({
+            position: { lat, lng },
+            map: map,
+            icon: {
+              path: isEncampment ? google.maps.SymbolPath.FORWARD_CLOSED_ARROW : google.maps.SymbolPath.CIRCLE,
+              scale: isEncampment ? 4 : 6,
+              fillColor: colors['grey'],
+              fillOpacity: 1,
+              strokeWeight: 1,
+              strokeColor: '#000000'
+            }
+          });
+          marker.addListener('click', () => {
+            const distance = point['Distance (miles)'] && point['Distance (miles)'] !== 'N/A' 
+              ? Number(point['Distance (miles)']).toFixed(2) : 'N/A';
+            new google.maps.InfoWindow({
+              content: `
+                <div style="text-align: center; font-weight: bold;">${point.Category}</div>
+                <b>Name:</b> ${point.Name || 'N/A'}<br>
+                <b>Closest Encampment:</b> ${point['Closest Encampment'] || 'N/A'}<br>
+                <b>Distance:</b> ${distance} miles<br>
+                <b>Direction:</b> ${point.Direction || 'N/A'}
+              `
+            }).open(map, marker);
+          });
+          return marker;
+        }).filter(marker => marker !== null);
+        console.log("Markers created:", markers.length);
+      } catch (error) {
+        console.error("Error creating markers:", error);
+      }
     }
 
     function plotMarkers(view) {
       console.log("Plotting view:", view, "Tier:", currentTier);
-
-      if (!markers.length) return;
-
+      if (!map) {
+        console.error("Map not initialized");
+        return;
+      }
+      if (!markers.length) {
+        console.warn("No markers to plot");
+        return;
+      }
       markers.forEach((marker, index) => {
         const point = data[index];
         let color = colors['grey'];
@@ -185,27 +215,31 @@
         } else {
           const secondaryCategory = getSecondaryCategory(view);
           const isSecondary = category === secondaryCategory;
-
           if (isEncampment || isSecondary) {
             if (!currentTier || tier === 'N/A' || (isEncampment && tier !== 'N/A')) {
-              color = colors[category].full;
+              color = colors[category]?.full || colors['grey'];
             } else if (tier === currentTier) {
-              color = colors[category].full;
+              color = colors[category]?.full || colors['grey'];
             } else {
-              color = colors[category].light;
+              color = colors[category]?.light || colors['grey'];
             }
           }
         }
 
         requestAnimationFrame(() => {
-          marker.setIcon({
-            path: isEncampment ? google.maps.SymbolPath.FORWARD_CLOSED_ARROW : google.maps.SymbolPath.CIRCLE,
-            scale: isEncampment ? 4 : 6,
-            fillColor: color,
-            fillOpacity: 1,
-            strokeWeight: 1,
-            strokeColor: '#000000'
-          });
+          try {
+            marker.setIcon({
+              path: isEncampment ? google.maps.SymbolPath.FORWARD_CLOSED_ARROW : google.maps.SymbolPath.CIRCLE,
+              scale: isEncampment ? 4 : 6,
+              fillColor: color,
+              fillOpacity: 1,
+              strokeWeight: 1,
+              strokeColor: '#000000'
+            });
+            marker.setMap(map); // Ensure marker is attached
+          } catch (error) {
+            console.error(`Error setting marker ${index}:`, error);
+          }
         });
       });
       console.log("Markers updated for view:", view);
